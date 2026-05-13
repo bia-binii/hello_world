@@ -1,0 +1,9 @@
+# Permite gerar aplicacoes desktop. Cada pasta contem: acog especifica para cada plataforma, arquivos de compilação.
+
+# Flutter-related
+**/Flutter/ephemeral/
+**/Pods/
+
+# Xcode-related
+**/dgph
+**/xcuserdata/
