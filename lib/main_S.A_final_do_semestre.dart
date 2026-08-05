@@ -505,9 +505,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// =======================================================
-// TELA DE CADASTRO / EDIÇÃO DE PRODUTO
-// =======================================================
+
 class CadastroProdutoScreen extends StatefulWidget {
   final Produto? produto;
   const CadastroProdutoScreen({super.key, this.produto});
@@ -644,9 +642,6 @@ class _CadastroProdutoScreenState extends State<CadastroProdutoScreen> {
   }
 }
 
-// =======================================================
-// TELA DE RELATÓRIO (simples, categorias e totais)
-// =======================================================
 class RelatorioScreen extends StatelessWidget {
   const RelatorioScreen({super.key});
 
@@ -680,9 +675,6 @@ class RelatorioScreen extends StatelessWidget {
   }
 }
 
-// =======================================================
-// TELA DE PERFIL
-// =======================================================
 class PerfilScreen extends StatelessWidget {
   const PerfilScreen({super.key});
 
