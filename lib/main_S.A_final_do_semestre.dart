@@ -197,7 +197,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildEstoquePage() {
     return Column(
       children: [
-        // Card resumo do mês (inspirado no card "Resumo do Mês")
         Container(
           margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           padding: const EdgeInsets.all(18),
@@ -259,7 +258,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
 
-        // Barra de busca
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           child: TextField(
@@ -278,7 +276,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
 
-        // Categorias (chips horizontais, como na tela de Supermercado)
         SizedBox(
           height: 44,
           child: ListView.builder(
@@ -317,7 +314,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
         const SizedBox(height: 4),
 
-        // Lista de produtos
         Expanded(
           child: _produtosFiltrados.isEmpty
               ? const Center(
@@ -444,7 +440,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            // Contador de quantidade (+ / -)
             Column(
               children: [
                 Row(
