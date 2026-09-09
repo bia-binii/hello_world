@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 
 void main() {
@@ -12,40 +14,41 @@ class MeuApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Distância até sua casa',
-      home: const LocalizacaoPage(),
+      title: 'Meu mapa',
+      home: const MapaPage(),
     );
   }
 }
 
-class LocalizacaoPage extends StatefulWidget {
-  const LocalizacaoPage({super.key});
+class MapaPage extends StatefulWidget {
+  const MapaPage({super.key});
 
   @override
-  State<LocalizacaoPage> createState() => _LocalizacaoPageState();
+  State<MapaPage> createState() => _MapaPageState();
 }
 
-class _LocalizacaoPageState extends State<LocalizacaoPage> {
-  // Localização atual
-  double? latitude;
-  double? longitude;
+class _MapaPageState extends State<MapaPage> {
+  final MapController _mapController = MapController();
 
-  final double casaLatitude = -21.44977867338592;
-  final double casaLongitude = -47.02675264854523;
+  LatLng? _localizacaoAtual;
+  bool _carregando = true;
 
-  // Distância entre escola e casa
-  double? distancia;
+  @override
+  void initState() {
+    super.initState();
+    _iniciarLocalizacao();
+  }
 
-  Future<void> _calcularDistancia() async {
-    // Verifica se o serviço de localização está ativado
+  Future<void> _iniciarLocalizacao() async {
     bool servicoAtivo = await Geolocator.isLocationServiceEnabled();
 
     if (!servicoAtivo) {
-      await Geolocator.openLocationSettings();
+      setState(() {
+        _carregando = false;
+      });
       return;
     }
 
-    // Verifica a permissão
     LocationPermission permissao = await Geolocator.checkPermission();
 
     if (permissao == LocationPermission.denied) {
@@ -54,91 +57,117 @@ class _LocalizacaoPageState extends State<LocalizacaoPage> {
 
     if (permissao == LocationPermission.denied ||
         permissao == LocationPermission.deniedForever) {
+      setState(() {
+        _carregando = false;
+      });
       return;
     }
 
-    // Pega a localização atual da escola
     Position posicao = await Geolocator.getCurrentPosition();
 
-    // Calcula a distância entre a escola e a casa
-    double distanciaCalculada = Geolocator.distanceBetween(
-      posicao.latitude,
-      posicao.longitude,
-      casaLatitude,
-      casaLongitude,
-    );
-
     setState(() {
-      latitude = posicao.latitude;
-      longitude = posicao.longitude;
-      distancia = distanciaCalculada;
+      _localizacaoAtual = LatLng(
+        posicao.latitude,
+        posicao.longitude,
+      );
+
+      _carregando = false;
     });
 
-    print('Latitude da escola: $latitude');
-    print('Longitude da escola: $longitude');
-    print('Distância até minha casa: $distancia metros');
+    _mapController.move(
+      _localizacaoAtual!,
+      16,
+    );
+
+    Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 5,
+      ),
+    ).listen((Position posicao) {
+      final novaLocalizacao = LatLng(
+        posicao.latitude,
+        posicao.longitude,
+      );
+
+      setState(() {
+        _localizacaoAtual = novaLocalizacao;
+      });
+
+      _mapController.move(
+        novaLocalizacao,
+        _mapController.camera.zoom,
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Distância até sua casa'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        title: const Text('Minha localização'),
       ),
 
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
+      body: Stack(
+        children: [
+          FlutterMap(
+            mapController: _mapController,
 
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            options: const MapOptions(
+              initialCenter: LatLng(
+                -21.442010,
+                -47.009005,
+              ),
+              initialZoom: 13,
+            ),
+
             children: [
-              
-              // icone
-              const Icon(Icons.home, size: 100, color: Colors.blue),
-
-              const SizedBox(height: 20),
-
-              const Text(
-                'Distância entre a escola e minha casa',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              TileLayer(
+                urlTemplate:
+                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName:
+                    'com.example.mapa_flutter',
               ),
 
-              const SizedBox(height: 20),
-
-              // Mostra a distância
-              if (distancia != null)
-                Text(
-                  distancia! >= 1000
-                      ? '${(distancia! / 1000).toStringAsFixed(2)} km'
-                      : '${distancia!.toStringAsFixed(2)} metros',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
-                  ),
-                )
-              else
-                const Text(
-                  'Clique no botão para calcular a distância.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
-                ),
-
-              const SizedBox(height: 30),
-
-              ElevatedButton(
-                onPressed: _calcularDistancia,
-                child: const Text('Calcular distância'),
+              MarkerLayer(
+                markers: [
+                  if (_localizacaoAtual != null)
+                    Marker(
+                      point: _localizacaoAtual!,
+                      width: 50,
+                      height: 50,
+                      child: const Icon(
+                        Icons.location_pin,
+                        color: Colors.red,
+                        size: 50,
+                      ),
+                    ),
+                ],
               ),
-
-              const SizedBox(height: 30),
             ],
           ),
-        ),
+
+          if (_carregando)
+            const Center(
+              child: CircularProgressIndicator(),
+            ),
+
+          Positioned(
+            right: 20,
+            bottom: 20,
+            child: FloatingActionButton(
+              onPressed: () {
+                if (_localizacaoAtual != null) {
+                  _mapController.move(
+                    _localizacaoAtual!,
+                    16,
+                  );
+                }
+              },
+              child: const Icon(Icons.my_location),
+            ),
+          ),
+        ],
       ),
     );
   }
