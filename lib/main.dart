@@ -32,6 +32,7 @@ class _MapaPageState extends State<MapaPage> {
 
   LatLng? _localizacaoAtual;
   bool _carregando = true;
+  bool _atualizando = false;
 
   @override
   void initState() {
@@ -39,6 +40,7 @@ class _MapaPageState extends State<MapaPage> {
     _iniciarLocalizacao();
   }
 
+  // Inicia a localização
   Future<void> _iniciarLocalizacao() async {
     bool servicoAtivo = await Geolocator.isLocationServiceEnabled();
 
@@ -63,22 +65,9 @@ class _MapaPageState extends State<MapaPage> {
       return;
     }
 
-    Position posicao = await Geolocator.getCurrentPosition();
+    await _atualizarLocalizacao();
 
-    setState(() {
-      _localizacaoAtual = LatLng(
-        posicao.latitude,
-        posicao.longitude,
-      );
-
-      _carregando = false;
-    });
-
-    _mapController.move(
-      _localizacaoAtual!,
-      16,
-    );
-
+    // Continua acompanhando a localização
     Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
@@ -93,12 +82,58 @@ class _MapaPageState extends State<MapaPage> {
       setState(() {
         _localizacaoAtual = novaLocalizacao;
       });
+    });
+  }
 
+  // Função para atualizar a localização manualmente
+  Future<void> _atualizarLocalizacao() async {
+    setState(() {
+      _atualizando = true;
+    });
+
+    try {
+      Position posicao = await Geolocator.getCurrentPosition();
+
+      final novaLocalizacao = LatLng(
+        posicao.latitude,
+        posicao.longitude,
+      );
+
+      setState(() {
+        _localizacaoAtual = novaLocalizacao;
+        _carregando = false;
+        _atualizando = false;
+      });
+
+      // Centraliza o mapa na nova localização
       _mapController.move(
         novaLocalizacao,
-        _mapController.camera.zoom,
+        16,
       );
-    });
+
+      // Mostra mensagem de sucesso
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Localização atualizada!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _atualizando = false;
+        _carregando = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível atualizar a localização.'),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -134,12 +169,12 @@ class _MapaPageState extends State<MapaPage> {
                   if (_localizacaoAtual != null)
                     Marker(
                       point: _localizacaoAtual!,
-                      width: 50,
-                      height: 50,
+                      width: 80,
+                      height: 80,
                       child: const Icon(
                         Icons.location_pin,
-                        color: Colors.red,
-                        size: 50,
+                        color: Color.fromARGB(255, 249, 82, 138),
+                        size: 55,
                       ),
                     ),
                 ],
@@ -147,11 +182,35 @@ class _MapaPageState extends State<MapaPage> {
             ],
           ),
 
+          // Indicador de carregamento inicial
           if (_carregando)
             const Center(
               child: CircularProgressIndicator(),
             ),
 
+          // Botão para atualizar localização
+          Positioned(
+            right: 20,
+            bottom: 90,
+            child: FloatingActionButton(
+              onPressed: _atualizando
+                  ? null
+                  : () {
+                      _atualizarLocalizacao();
+                    },
+              child: _atualizando
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                      ),
+                    )
+                  : const Icon(Icons.refresh),
+            ),
+          ),
+
+          // Botão para voltar para minha localização
           Positioned(
             right: 20,
             bottom: 20,
