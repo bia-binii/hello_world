@@ -76,7 +76,7 @@ class _HomePageState extends State<HomePage> {
   // Toca o som
   Future<void> tocarSom() async {
     await player.play(
-      AssetSource('audio/toque.mp3'),
+      AssetSource('audio/videoplayback.mp3'),
     );
   }
 
