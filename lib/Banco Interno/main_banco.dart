@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'Banco Interno/tarefa.dart';
+import 'tarefa.dart';
 import 'Banco Interno/database_helper.dart';
 
 void main() {
